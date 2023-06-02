@@ -8301,7 +8301,6 @@ unlock:
 #endif /* CONFIG_OPLUS_FEATURE_TPP */
 
 done:
-
 	trace_sched_task_util(p, cpumask_bits(candidates)[0], best_energy_cpu,
 			sync, fbt_env.need_idle, fbt_env.fastpath,
 			placement_boost, start_t, boosted, is_rtg,
