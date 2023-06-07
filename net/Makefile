@@ -98,11 +98,6 @@ obj-y                   	+= oplus_connectivity_sla/
 obj-y                   	+= oplus_ipv6/
 #endif /* OPLUS_FEATURE_IPV6_OPTIMIZE */
 
-#ifdef OPLUS_FEATURE_APP_MONITOR
-#Add for apps network monitors
-obj-y				+= oplus_apps_monitor/
-#endif /* OPLUS_FEATURE_APP_MONITOR */
-
 #ifdef OPLUS_FEATURE_DATA_EVAL
 obj-$(CONFIG_OPLUS_FEATURE_DATA_EVAL) += oplus_score/
 #endif /* OPLUS_FEATURE_DATA_EVAL */
