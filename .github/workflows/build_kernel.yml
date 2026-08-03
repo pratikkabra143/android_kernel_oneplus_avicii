@@ -12,11 +12,9 @@ on:
              default: '* No Changelog provided by the developer'
   
 env:
-  TOKEN: ${{ secrets.TG_BOT_TOKEN }}
-  CHATID: ${{ secrets.TG_CHAT_ID }}
-  CHATIDTEST: ${{ secrets.TG_CHAT_ID_TEST }}
   CHANGELOG: ${{ github.event.inputs.Changelog }}
   BUILDTYPE: ${{ github.event.inputs.Buildtype }}
+  CCACHE_DIR: /home/runner/.ccache
 jobs:
   NSK_CI:
     runs-on: ubuntu-22.04
@@ -24,14 +22,39 @@ jobs:
        - name: Install packages
          run: |
             sudo apt-get update
-            sudo apt-get -y install mkisofs git python2 bc cpio python3 python-is-python3 device-tree-compiler wget jq
+            sudo apt-get -y install mkisofs git python2 bc cpio python3 python-is-python3 device-tree-compiler wget jq ccache
        - name: Initiate cloning
          run: |
             cd ~
-            git clone https://github.com/sreeshankark/android_kernel_oneplus_avicii -b $GITHUB_REF_NAME --depth=1 kernel
+            git clone https://github.com/pratikkabra143/android_kernel_oneplus_avicii -b $GITHUB_REF_NAME --depth=1 kernel
             cd kernel
             sed -i 's/ccflags-y += $(subst $(srctree),source,$(INCS))/ccflags-y += $(INCS)/g' drivers/staging/qcacld-3.0/Kbuild
+
+       - name: Setup CCache
+         uses: actions/cache@v5
+         with:
+           path: /home/runner/.ccache
+           key: ccache-${{ runner.os }}-${{ github.sha }}
+           restore-keys: |
+             ccache-${{ runner.os }}-
+
        - name: Build NS Kernel
          run: |
             cd ~/kernel
-            python build.py 	    
+            python build.py
+
+       - name: CCache Stats
+         if: always()
+         run: ccache -s
+
+       - name: Upload Kernel Build Artifacts
+         if: always()
+         uses: actions/upload-artifact@v7
+         with:
+           name: NeverSettle-Kernel-${{ github.event.inputs.Buildtype }}-Artifacts
+           path: |
+             /home/runner/*.zip
+             /home/runner/*.apk
+             /home/runner/*.txt
+             /home/runner/kernel/error.log
+           if-no-files-found: warn
