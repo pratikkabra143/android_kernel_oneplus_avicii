@@ -31,6 +31,8 @@ jobs:
             cd kernel
             patch -p1 < ~/nomount/kernel/patches/nomount_4.19_kernel_integration.patch
             cp ~/nomount/kernel/src/* ~/kernel/fs
+            # Fix: nomount patch lands in d_path_outlen(int *buflen) instead of d_path(int buflen)
+            sed -i 's/nomount_handle_dpath(path, buf, buflen)/nomount_handle_dpath(path, buf, *buflen)/' fs/d_path.c
             sed -i 's/ccflags-y += $(subst $(srctree),source,$(INCS))/ccflags-y += $(INCS)/g' drivers/staging/qcacld-3.0/Kbuild
 
        - name: Setup CCache
