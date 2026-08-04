@@ -9,6 +9,10 @@
 #include <linux/security.h>
 #include <linux/uaccess.h>
 #include <linux/compat.h>
+#if defined(CONFIG_KSU_SUSFS_SUS_MOUNT) || defined(CONFIG_KSU_SUSFS_OPEN_REDIRECT)
+#include <linux/susfs_def.h>
+#include "mount.h"
+#endif
 #include "internal.h"
 
 static int flags_by_mnt(int mnt_flags)
@@ -67,10 +71,31 @@ static int statfs_by_dentry(struct dentry *dentry, struct kstatfs *buf)
 	return retval;
 }
 
+#ifdef CONFIG_KSU_SUSFS_OPEN_REDIRECT
+extern int susfs_open_redirect_spoof_vfs_statfs(struct inode *inode, struct kstatfs *buf);
+#endif // #ifdef CONFIG_KSU_SUSFS_OPEN_REDIRECT
+
 int vfs_statfs(const struct path *path, struct kstatfs *buf)
 {
 	int error;
+#ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
+	struct mount *mnt;
+	struct vfsmount *no_sus_vfsmnt = NULL;
+#endif // #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
+#ifdef CONFIG_KSU_SUSFS_OPEN_REDIRECT
+	struct inode *inode = path->dentry->d_inode;
+#endif // #ifdef CONFIG_KSU_SUSFS_OPEN_REDIRECT
 
+#ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
+	mnt = real_mount(path->mnt);
+	if (likely(susfs_is_current_proc_umounted())) {
+		for (; mnt->mnt_id >= DEFAULT_KSU_MNT_ID; mnt = mnt->mnt_parent) {}
+	}
+#endif
+
+#if defined(CONFIG_KSU_SUSFS_SUS_MOUNT) || defined(CONFIG_KSU_SUSFS_OPEN_REDIRECT)
+orig_flow:
+#endif // #if defined(CONFIG_KSU_SUSFS_SUS_MOUNT) || defined(CONFIG_KSU_SUSFS_OPEN_REDIRECT)
 	error = statfs_by_dentry(path->dentry, buf);
 	if (!error)
 		buf->f_flags = calculate_f_flags(path->mnt);
