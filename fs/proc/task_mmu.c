@@ -21,9 +21,6 @@
 #include <linux/pkeys.h>
 #include <linux/mm_inline.h>
 #include <linux/ctype.h>
-#if defined(CONFIG_KSU_SUSFS_SUS_KSTAT) || defined(CONFIG_KSU_SUS_MAP)
-#include <linux/susfs_def.h>
-#endif
 #if defined(CONFIG_KSU_SUSFS_SUS_KSTAT) || defined(CONFIG_KSU_SUSFS_SUS_MAP) || defined(CONFIG_KSU_SUSFS_OPEN_REDIRECT)
 #include <linux/susfs_def.h>
 #endif
@@ -456,6 +453,10 @@ static int show_vma_header_prefix(struct seq_file *m, unsigned long start,
 	return 0;
 }
 
+#ifdef CONFIG_KSU_SUSFS_SUS_KSTAT
+extern void susfs_sus_ino_for_show_map_vma(unsigned long ino, dev_t *out_dev, unsigned long *out_ino);
+#endif
+
 static void
 show_map_vma(struct seq_file *m, struct vm_area_struct *vma)
 {
@@ -474,21 +475,24 @@ show_map_vma(struct seq_file *m, struct vm_area_struct *vma)
 
 	if (file) {
 		struct inode *inode = file_inode(vma->vm_file);
-#ifdef CONFIG_KSU_SUSFS_SUS_MAP
-		if(SUSFS_IS_INODE_SUS_MAP(inode))
-		return;
-#endif
-#ifdef CONFIG_KSU_SUSFS_SUS_KSTAT
-		if (unlikely(inode->i_state& BIT_SUS_KSTAT)) {
-			susfs_show_map_vma_spoofer(inode, &dev, &ino);
-			goto bypass_orig_flow;
+#ifdef CONFIG_KSU_SUSFS_OPEN_REDIRECT
+		if (SUSFS_IS_INODE_OPEN_REDIRECT(inode)) {
+			if (!susfs_open_redirect_spoof_show_map_vma(inode, &ino, &dev, spoofed_redirected_name)) {
+				pgoff = ((loff_t)vma->vm_pgoff) << PAGE_SHIFT;
+				goto orig_flow;
+			}
 		}
+#endif // #ifdef CONFIG_KSU_SUSFS_OPEN_REDIRECT
+
+#ifdef CONFIG_KSU_SUSFS_SUS_MAP
+		if (SUSFS_IS_INODE_SUS_MAP(inode))
+			return;
 #endif
 		dev = inode->i_sb->s_dev;
 		ino = inode->i_ino;
 		pgoff = ((loff_t)vma->vm_pgoff) << PAGE_SHIFT;
 #ifdef CONFIG_KSU_SUSFS_SUS_KSTAT
-bypass_orig_flow:
+		susfs_show_map_vma_spoofer(inode, &dev, &ino);
 #endif
 	}
 
@@ -498,17 +502,26 @@ orig_flow:
 
 	start = vma->vm_start;
 	end = vma->vm_end;
-	if (show_vma_header_prefix(m, start, end, flags, pgoff, dev, ino))
-		return;
+
+	show_vma_header_prefix(m, start, end, flags, pgoff, dev, ino);
 
 	/*
 	 * Print the dentry name for named mappings, and a
 	 * special [heap] marker for the heap:
 	 */
+
+#ifdef CONFIG_KSU_SUSFS_OPEN_REDIRECT
+	if (spoofed_redirected_name) {
+		seq_pad(m, ' ');
+		seq_puts(m, spoofed_redirected_name);
+		seq_putc(m, '\n');
+		kfree(spoofed_redirected_name);
+		return;
+	}
+#endif // #ifdef CONFIG_KSU_SUSFS_OPEN_REDIRECT
 	if (file) {
 		char *buf;
 		size_t size = seq_get_buf(m, &buf);
-
 		/*
 		 * This won't escape newline characters from the path. If a
 		 * program uses newlines in its paths then it can kick rocks.
@@ -517,11 +530,9 @@ orig_flow:
 			const int inlen = size - 1;
 			int outlen = inlen;
 			char *p;
-
 			p = d_path_outlen(&file->f_path, buf, &outlen);
 			if (!IS_ERR(p)) {
 				size_t len;
-
 				if (outlen != inlen)
 					len = inlen - outlen - 1;
 				else
@@ -532,18 +543,10 @@ orig_flow:
 				return;
 			}
 		}
-
 		/* Set the overflow status to get more memory */
 		seq_commit(m, -1);
-#ifdef CONFIG_KSU_SUSFS_OPEN_REDIRECT
-	if (spoofed_redirected_name) {
-		seq_pad(m, ' ');
-		seq_puts(m, spoofed_redirected_name);
-		seq_putc(m, '\n');
-		kfree(spoofed_redirected_name);
 		return;
 	}
-#endif // #ifdef CONFIG_KSU_SUSFS_OPEN_REDIRECT
 	if (file) {
 		seq_pad(m, ' ');
 		seq_file_path(m, file, "\n");
@@ -1097,8 +1100,8 @@ static int show_smaps_rollup(struct seq_file *m, void *v)
 
 	for (vma = priv->mm->mmap; vma; vma = vma->vm_next) {
 #ifdef CONFIG_KSU_SUSFS_SUS_MAP
-	if (vma->vm_file && SUSFS_IS_INODE_SUS_MAP(file_inode(vma->vm_file)))
-		goto bypass_orig_flow;
+		if (vma->vm_file && SUSFS_IS_INODE_SUS_MAP(file_inode(vma->vm_file)))
+				goto bypass_orig_flow;
 #endif
 		smap_gather_stats(vma, &mss);
 #ifdef CONFIG_KSU_SUSFS_SUS_MAP

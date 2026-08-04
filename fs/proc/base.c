@@ -98,16 +98,11 @@
 #include <trace/events/oom.h>
 #include "internal.h"
 #include "fd.h"
+#if defined(CONFIG_KSU_SUSFS_SUS_MAP) || defined(CONFIG_KSU_SUSFS_OPEN_REDIRECT)
+#include <linux/susfs_def.h>
+#endif
 
 #include "../../lib/kstrtox.h"
-
-#ifdef CONFIG_KSU_SUSFS
-#include <linux/susfs_def.h>
-#endif
-
-#if defined(CONFIG_KSU_SUSFS_SUS_MAP) && defined(CONFIG_KSU_SUSFS_OPEN_REDIRECT)
-#include <linux/susfs_def.h>
-#endif
 
 #ifdef OPLUS_FEATURE_HEALTHINFO
 #ifdef CONFIG_OPLUS_JANK_INFO
@@ -1954,6 +1949,18 @@ static int do_proc_readlink(struct path *path, char __user *buffer, int buflen)
 
 	if (!tmp)
 		return -ENOMEM;
+
+#ifdef CONFIG_KSU_SUSFS_OPEN_REDIRECT
+	if (SUSFS_IS_INODE_OPEN_REDIRECT(path->dentry->d_inode)) {
+		if (!susfs_open_redirect_spoof_do_proc_readlink(path->dentry->d_inode, tmp, buflen)) {
+			len = strlen(tmp);
+			if (copy_to_user(buffer, tmp, len))
+				len = -EFAULT;
+			goto out;
+		}
+	}
+#endif
+
 	pathname = d_path(path, tmp, PAGE_SIZE);
 	len = PTR_ERR(pathname);
 	if (IS_ERR(pathname))
@@ -1962,20 +1969,9 @@ static int do_proc_readlink(struct path *path, char __user *buffer, int buflen)
 
 	if (len > buflen)
 		len = buflen;
-
-#ifdef CONFIG_KSU_SUSFS_SUS_PROC_FD_LINK
-	if (!susfs_is_sus_proc_fd_link_list_empty()) {
-		if (susfs_sus_proc_fd_link(pathname, len))
-			goto orig_flow;
-	}
-#endif
-
-#ifdef CONFIG_KSU_SUSFS_SUS_PROC_FD_LINK
-orig_flow:
-#endif
 	if (copy_to_user(buffer, pathname, len))
 		len = -EFAULT;
-out:
+ out:
 	free_page((unsigned long)tmp);
 	return len;
 }
@@ -2384,10 +2380,6 @@ struct map_files_info {
 	unsigned long	start;
 	unsigned long	end;
 	fmode_t		mode;
-#ifdef CONFIG_KSU_SUSFS_SUS_MAP
-	int susfs_action;
-#endif
-
 };
 
 /*
@@ -2506,10 +2498,6 @@ proc_map_files_readdir(struct file *file, struct dir_context *ctx)
 	struct map_files_info *p;
 	int ret;
 
-#ifdef CONFIG_KSU_SUSFS_SUS_MAP
-	struct inode *inode;
-#endif
-
 	ret = -ENOENT;
 	task = get_proc_task(file_inode(file));
 	if (!task)
@@ -2567,7 +2555,6 @@ proc_map_files_readdir(struct file *file, struct dir_context *ctx)
 			if (!vma->vm_file)
 				continue;
 #ifdef CONFIG_KSU_SUSFS_SUS_MAP
-			inode = file_inode(vma->vm_file);
 			if (SUSFS_IS_INODE_SUS_MAP(file_inode(vma->vm_file)))
 				continue;
 #endif
@@ -2577,7 +2564,6 @@ proc_map_files_readdir(struct file *file, struct dir_context *ctx)
 			info.start = vma->vm_start;
 			info.end = vma->vm_end;
 			info.mode = vma->vm_file->f_mode;
-
 			if (flex_array_put(fa, i++, &info, GFP_KERNEL))
 				BUG();
 		}

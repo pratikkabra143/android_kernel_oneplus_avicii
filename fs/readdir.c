@@ -138,7 +138,7 @@ static int fillonedir(struct dir_context *ctx, const char *name, int namlen,
 	struct old_linux_dirent __user * dirent;
 	unsigned long d_ino;
 #ifdef CONFIG_KSU_SUSFS_SUS_PATH
-       struct inode *inode;
+	struct inode *inode;
 #endif
 
 	if (buf->result)
@@ -239,8 +239,9 @@ static int filldir(struct dir_context *ctx, const char *name, int namlen,
 	int reclen = ALIGN(offsetof(struct linux_dirent, d_name) + namlen + 2,
 		sizeof(long));
 #ifdef CONFIG_KSU_SUSFS_SUS_PATH
-       struct inode *inode;
+	struct inode *inode;
 #endif
+
 	buf->error = verify_dirent_name(name, namlen);
 	if (unlikely(buf->error))
 		return buf->error;
@@ -348,7 +349,7 @@ static int filldir64(struct dir_context *ctx, const char *name, int namlen,
 	int reclen = ALIGN(offsetof(struct linux_dirent64, d_name) + namlen + 1,
 		sizeof(u64));
 #ifdef CONFIG_KSU_SUSFS_SUS_PATH
-       struct inode *inode;
+	struct inode *inode;
 #endif
 
 	buf->error = verify_dirent_name(name, namlen);
@@ -410,9 +411,6 @@ int ksys_getdents64(unsigned int fd, struct linux_dirent64 __user *dirent,
 		.current_dir = dirent
 	};
 	int error;
-#ifdef CONFIG_KSU_SUSFS_SUS_PATH
-	struct inode *inode;
-#endif
 
 	if (!access_ok(VERIFY_WRITE, dirent, count))
 		return -EFAULT;
@@ -458,6 +456,8 @@ struct compat_readdir_callback {
 	struct compat_old_linux_dirent __user *dirent;
 #ifdef CONFIG_KSU_SUSFS_SUS_PATH
 	struct super_block *sb;
+	bool is_base_dentry_android_data_root_dir;
+	bool is_base_dentry_sdcard_root_dir;
 #endif
 	int result;
 };
@@ -523,9 +523,6 @@ COMPAT_SYSCALL_DEFINE3(old_readdir, unsigned int, fd,
 		.ctx.actor = compat_fillonedir,
 		.dirent = dirent
 	};
-#ifdef CONFIG_KSU_SUSFS_SUS_PATH
-	struct inode *inode;
-#endif
 
 	if (!f.file)
 		return -EBADF;
@@ -631,9 +628,6 @@ COMPAT_SYSCALL_DEFINE3(getdents, unsigned int, fd,
 		.count = count
 	};
 	int error;
-#ifdef CONFIG_KSU_SUSFS_SUS_PATH
-	struct inode *inode;
-#endif
 
 	if (!access_ok(VERIFY_WRITE, dirent, count))
 		return -EFAULT;
