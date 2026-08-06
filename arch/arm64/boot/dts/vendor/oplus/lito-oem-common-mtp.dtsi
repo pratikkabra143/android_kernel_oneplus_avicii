@@ -761,12 +761,7 @@
 		};
 	};
 	qcom,pm8150@0 {
-		qcom,power-on@800
-		{
-			//#ifdef CONFIG_OPLUS_FEATURE_QCOM_PMICWD
-			qcom,pmicwd;
-			//#endif
-		};
+		qcom,power-on@800 { };
 	};
 };
 
