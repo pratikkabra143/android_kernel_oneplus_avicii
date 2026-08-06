@@ -73,10 +73,6 @@
 #ifdef OPLUS_BUG_STABILITY
 #include <soc/oplus/system/oplus_process.h>
 #endif
-#if defined(OPLUS_FEATURE_VIRTUAL_RESERVE_MEMORY) && defined(CONFIG_VIRTUAL_RESERVE_MEMORY)
-//reserved area operations
-#include <linux/reserve_area.h>
-#endif
 
 /*
  * The default value should be high enough to not crash a system that randomly

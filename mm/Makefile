@@ -120,10 +120,6 @@ obj-$(CONFIG_PROCESS_RECLAIM_ENHANCE) += process_mm_reclaim_weak.o
 endif
 #endif /*defined(OPLUS_FEATURE_PROCESS_RECLAIM)
 
-#if defined(OPLUS_FEATURE_VIRTUAL_RESERVE_MEMORY)
-obj-$(CONFIG_VIRTUAL_RESERVE_MEMORY) += reserve_area.o
-#endif
-
 #if defined(OPLUS_FEATURE_MULTI_FREEAREA)
 obj-$(CONFIG_PHYSICAL_ANTI_FRAGMENTATION) += multi_freearea.o
 #endif

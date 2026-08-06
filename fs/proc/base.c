@@ -3470,10 +3470,6 @@ static int proc_pid_patch_state(struct seq_file *m, struct pid_namespace *ns,
 static const struct file_operations proc_task_operations;
 static const struct inode_operations proc_task_inode_operations;
 
-#if defined(OPLUS_FEATURE_VIRTUAL_RESERVE_MEMORY) && defined(CONFIG_VIRTUAL_RESERVE_MEMORY)
-#include "va_feature_node.h"
-#endif
-
 static const struct pid_entry tgid_base_stuff[] = {
 	DIR("task",       S_IRUGO|S_IXUGO, proc_task_inode_operations, proc_task_operations),
 	DIR("fd",         S_IRUSR|S_IXUSR, proc_fd_inode_operations, proc_fd_operations),
@@ -3591,9 +3587,6 @@ static const struct pid_entry tgid_base_stuff[] = {
 #endif
 #ifdef CONFIG_CPU_FREQ_TIMES
 	ONE("time_in_state", 0444, proc_time_in_state_show),
-#endif
-#if defined(OPLUS_FEATURE_VIRTUAL_RESERVE_MEMORY) && defined(CONFIG_VIRTUAL_RESERVE_MEMORY)
-	REG("va_feature", 0666, proc_va_feature_operations),
 #endif
 };
 
