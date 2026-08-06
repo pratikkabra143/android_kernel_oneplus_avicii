@@ -41,5 +41,3 @@ obj-$(CONFIG_OPLUS_FEATURE_SENSOR_CRASH_MONITOR)	+= oplus/oplus_slpirst/
 obj-y += oplus/misc/
 #endif /* OPLUS_FEATURE_ESIM */
 
-#Add for NandSwap
-obj-$(CONFIG_NANDSWAP)		+= oplus/oplus_nandswap/
