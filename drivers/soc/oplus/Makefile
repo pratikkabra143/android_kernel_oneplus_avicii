@@ -7,8 +7,3 @@ obj-$(CONFIG_OPLUS_FEATURE_MIDAS)    += midas/
 #ifdef OPLUS_FEATURE_THERMAL_HORAE
 obj-$(CONFIG_HORAE_THERMAL_SHELL) += thermal/
 #endif /* OPLUS_FEATURE_THERMAL_HORAE */
-
-#ifdef OPLUS_FEATURE_GPIO_NC
-obj-$(CONFIG_OPLUS_GPIO_NC) +=  oplus_gpio/
-#endif
-
