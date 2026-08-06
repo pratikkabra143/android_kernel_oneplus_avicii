@@ -68,9 +68,6 @@
 #if defined(OPLUS_FEATURE_ZRAM_OPT) && defined(CONFIG_FG_TASK_UID)
 #include <linux/healthinfo/fg.h>
 #endif /*OPLUS_FEATURE_ZRAM_OPT*/
-#if defined(OPLUS_FEATURE_MULTI_KSWAPD) && defined(CONFIG_OPLUS_MULTI_KSWAPD)
-#include <linux/multi_kswapd.h>
-#endif
 #include <trace/hooks/vh_vmscan.h>
 
 struct scan_control {
@@ -153,14 +150,12 @@ struct scan_control {
 #endif
 };
 
-#ifndef CONFIG_OPLUS_MULTI_KSWAPD
 /*
  * Number of active kswapd threads
  */
 #define DEF_KSWAPD_THREADS_PER_NODE 1
-//int kswapd_threads = DEF_KSWAPD_THREADS_PER_NODE;
+int kswapd_threads = DEF_KSWAPD_THREADS_PER_NODE;
 int kswapd_threads_current = DEF_KSWAPD_THREADS_PER_NODE;
-#endif /*CONFIG_OPLUS_MULTI_KSWAPD*/
 
 #ifdef ARCH_HAS_PREFETCH
 #define prefetch_prev_lru_page(_page, _base, _field)			\
@@ -4090,11 +4085,7 @@ static void kswapd_try_to_sleep(pg_data_t *pgdat, int alloc_order, int reclaim_o
  * If there are applications that are active memory-allocators
  * (most normal use), this basically shouldn't matter.
  */
- #if defined(OPLUS_FEATURE_MULTI_KSWAPD) && defined(CONFIG_OPLUS_MULTI_KSWAPD)
- int kswapd(void *p)
- #else
 static int kswapd(void *p)
-#endif
 {
 	unsigned int alloc_order, reclaim_order;
 	unsigned int classzone_idx = MAX_NR_ZONES - 1;
@@ -4285,9 +4276,6 @@ unsigned long shrink_all_memory(unsigned long nr_to_reclaim)
    restore their cpu bindings. */
 static int kswapd_cpu_online(unsigned int cpu)
 {
-#if defined(OPLUS_FEATURE_MULTI_KSWAPD) && defined(CONFIG_OPLUS_MULTI_KSWAPD)
-	return kswapd_cpu_online_ext(cpu);
-#else
 	int nid, hid;
 	int nr_threads = kswapd_threads_current;
 
@@ -4304,7 +4292,6 @@ static int kswapd_cpu_online(unsigned int cpu)
 		}
 	}
 	return 0;
-#endif
 }
 
 /*
@@ -4313,9 +4300,6 @@ static int kswapd_cpu_online(unsigned int cpu)
  */
 int kswapd_run(int nid)
 {
-#if defined(OPLUS_FEATURE_MULTI_KSWAPD) && defined(CONFIG_OPLUS_MULTI_KSWAPD)
-		return kswapd_run_ext(nid);
-#else
 	pg_data_t *pgdat = NODE_DATA(nid);
 	int ret = 0;
 	int hid, nr_threads;
@@ -4338,7 +4322,6 @@ int kswapd_run(int nid)
 	}
 	kswapd_threads_current = nr_threads;
 	return ret;
-#endif
 }
 
 /*
@@ -4347,9 +4330,6 @@ int kswapd_run(int nid)
  */
 void kswapd_stop(int nid)
 {
-#if defined(OPLUS_FEATURE_MULTI_KSWAPD) && defined(CONFIG_OPLUS_MULTI_KSWAPD)
-	return kswapd_stop_ext(nid);
-#else
 	struct task_struct *kswapd;
 	int hid;
 	int nr_threads = kswapd_threads_current;
@@ -4361,7 +4341,6 @@ void kswapd_stop(int nid)
 			NODE_DATA(nid)->kswapd[hid] = NULL;
 		}
 	}
-#endif
 
 }
 

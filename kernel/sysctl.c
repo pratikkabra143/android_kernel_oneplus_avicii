@@ -100,10 +100,6 @@
 #include <linux/nmi.h>
 #endif
 
-#if defined(OPLUS_FEATURE_MULTI_KSWAPD) && defined(CONFIG_OPLUS_MULTI_KSWAPD)
-#include <linux/multi_kswapd.h>
-#endif
-
 #if defined(CONFIG_SYSCTL)
 
 #if defined(CONFIG_OPLUS_FEATURE_HUNG_TASK_ENHANCE) && defined(CONFIG_OPLUS_FEATURE_DEATH_HEALER)
@@ -1973,17 +1969,6 @@ static struct ctl_table vm_table[] = {
 		.proc_handler	= watermark_boost_factor_sysctl_handler,
 		.extra1		= &zero,
 	},
-#if defined(OPLUS_FEATURE_MULTI_KSWAPD) && defined(CONFIG_OPLUS_MULTI_KSWAPD)
-	{
-		.procname	= "kswapd_threads",
-		.data		= &kswapd_threads,
-		.maxlen		= sizeof(kswapd_threads),
-		.mode		= 0644,
-		.proc_handler	= kswapd_threads_sysctl_handler,
-		.extra1		= &one,
-		.extra2		= &max_kswapd_threads,
-	},
-#endif
 	{
 		.procname	= "watermark_scale_factor",
 		.data		= &watermark_scale_factor,
