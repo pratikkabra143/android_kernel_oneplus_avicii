@@ -31,10 +31,6 @@
 #include <linux/rseq.h>
 #include <linux/android_kabi.h>
 
-#ifdef VENDOR_EDIT
-extern void show_regs(struct pt_regs *);
-#endif /* VENDOR_EDIT */
-
 /* task_struct member predeclarations (sorted alphabetically): */
 struct audit_context;
 struct backing_dev_info;
@@ -824,13 +820,6 @@ struct wake_q_node {
 	struct wake_q_node *next;
 };
 
-#if defined(OPLUS_FEATURE_PROCESS_RECLAIM) && defined(CONFIG_PROCESS_RECLAIM_ENHANCE)
-union reclaim_limit {
-	unsigned long stop_jiffies;
-	unsigned long stop_scan_addr;
-};
-#endif
-
 struct task_struct {
 #ifdef CONFIG_THREAD_INFO_IN_TASK
 	/*
@@ -1486,9 +1475,6 @@ struct task_struct {
 #ifdef CONFIG_BLK_CGROUP
 	struct request_queue		*throttle_queue;
 #endif
-#if defined(OPLUS_FEATURE_PROCESS_RECLAIM) && defined(CONFIG_PROCESS_RECLAIM_ENHANCE)
-	union reclaim_limit reclaim;
-#endif
 #ifdef CONFIG_UPROBES
 	struct uprobe_task		*utask;
 #endif
@@ -1757,11 +1743,6 @@ extern struct pid *cad_pid;
 #endif
 #define PF_FREEZER_SKIP		0x40000000	/* Freezer should not count it as freezable */
 #define PF_SUSPEND_TASK		0x80000000      /* This thread called freeze_processes() and should not be frozen */
-#if defined(OPLUS_FEATURE_PROCESS_RECLAIM) && defined(CONFIG_PROCESS_RECLAIM_ENHANCE)
-#define PF_RECLAIM_SHRINK	0x02000000	/* Flag the task is memory compresser */
-
-#define current_is_reclaimer() (current->flags & PF_RECLAIM_SHRINK)
-#endif
 
 /*
  * Perf critical flags

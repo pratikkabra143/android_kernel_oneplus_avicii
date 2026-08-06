@@ -111,11 +111,3 @@ obj-$(CONFIG_HMM) += hmm.o
 obj-$(CONFIG_MEMFD_CREATE) += memfd.o
 obj-$(CONFIG_MEMFD_ASHMEM_SHIM) += memfd-ashmem-shim.o
 obj-$(CONFIG_PROCESS_RECLAIM)	+= process_reclaim.o
-
-#if defined(OPLUS_FEATURE_PROCESS_RECLAIM)
-ifeq ($(OPLUS_FEATURE_PROCESS_RECLAIM), yes)
-obj-$(CONFIG_PROCESS_RECLAIM_ENHANCE) += process_mm_reclaim.o
-else
-obj-$(CONFIG_PROCESS_RECLAIM_ENHANCE) += process_mm_reclaim_weak.o
-endif
-#endif /*defined(OPLUS_FEATURE_PROCESS_RECLAIM)

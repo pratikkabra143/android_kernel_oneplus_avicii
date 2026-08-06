@@ -102,10 +102,6 @@
 
 #if defined(CONFIG_SYSCTL)
 
-#if defined(CONFIG_OPLUS_FEATURE_HUNG_TASK_ENHANCE) && defined(CONFIG_OPLUS_FEATURE_DEATH_HEALER)
-#include <soc/oplus/system/hung_task_enhance.h>
-#endif
-
 /* External variables not in a header file. */
 extern int suid_dumpable;
 #ifdef CONFIG_COREDUMP
@@ -140,14 +136,7 @@ static int int_max = INT_MAX;
 static unsigned long zero_ul;
 static unsigned long long_max = LONG_MAX;
 static int one_hundred = 100;
-#if defined(OPLUS_FEATURE_ZRAM_OPT) && defined(CONFIG_OPLUS_ZRAM_OPT)
-extern int direct_vm_swappiness;
-static int two_hundred = 200;
-#endif /*OPLUS_FEATURE_ZRAM_OPT*/
 
-#ifdef OPLUS_FEATURE_EDTASK_IMPROVE
-int sysctl_ed_task_enabled = 1;
-#endif /* OPLUS_FEATURE_EDTASK_IMPROVE */
 static int one_thousand = 1000;
 #ifdef CONFIG_PRINTK
 static int ten_thousand = 10000;
@@ -678,16 +667,6 @@ static struct ctl_table kern_table[] = {
 		.extra2		= &one_thousand,
 	},
 #endif
-
-#ifdef OPLUS_FEATURE_EDTASK_IMPROVE
-	{
-		.procname	= "ed_task_enabled",
-		.data		= &sysctl_ed_task_enabled,
-		.maxlen		= sizeof(int),
-		.mode		= 0666,
-		.proc_handler	= proc_dointvec,
-	},
-#endif /* OPLUS_FEATURE_EDTASK_IMPROVE */
 
 	{
 		.procname	= "sched_force_lb_enable",
@@ -1559,25 +1538,6 @@ static struct ctl_table kern_table[] = {
 		.extra1		= &zero,
 		.extra2		= &one,
 	},
-#if defined(CONFIG_OPLUS_FEATURE_HUNG_TASK_ENHANCE) && defined(CONFIG_OPLUS_FEATURE_DEATH_HEALER)
-/* record the hung task killing */
-	{
-		.procname	= "hung_task_kill",
-		.data		= &sysctl_hung_task_kill,
-		.maxlen		= 128,
-		.mode		= 0666,
-		.proc_handler	= proc_dostring,
-	},
-/* Foreground background optimization,change max io count */
-	{
-		.procname	= "hung_task_maxiowait_count",
-		.data		= &sysctl_hung_task_maxiowait_count,
-		.maxlen		= sizeof(int),
-		.mode		= 0644,
-		.proc_handler	= proc_dointvec_minmax,
-		.extra1		= &five,
-	},
-#endif
 #endif
 #ifdef CONFIG_RT_MUTEXES
 	{
@@ -1837,23 +1797,8 @@ static struct ctl_table vm_table[] = {
 		.mode		= 0644,
 		.proc_handler	= proc_dointvec_minmax,
 		.extra1		= &zero,
-#if defined(OPLUS_FEATURE_ZRAM_OPT) && defined(CONFIG_OPLUS_ZRAM_OPT)
-		.extra2		= &two_hundred,
-#else
 		.extra2		= &one_hundred,
-#endif /*OPLUS_FEATURE_ZRAM_OPT*/
 	},
-#if defined(OPLUS_FEATURE_ZRAM_OPT) && defined(CONFIG_OPLUS_ZRAM_OPT)
-	{
-		.procname	= "direct_swappiness",
-		.data		= &direct_vm_swappiness,
-		.maxlen 	= sizeof(direct_vm_swappiness),
-		.mode		= 0644,
-		.proc_handler	= proc_dointvec_minmax,
-		.extra1 	= &zero,
-		.extra2 	= &two_hundred,
-	},
-#endif
 	{
 		.procname       = "want_old_faultaround_pte",
 		.data           = &want_old_faultaround_pte,
@@ -1925,12 +1870,8 @@ static struct ctl_table vm_table[] = {
 		.procname	= "compact_memory",
 		.data		= &sysctl_compact_memory,
 		.maxlen		= sizeof(int),
-#ifdef OPLUS_FEATURE_PERFORMANCE
-		.mode		= 0222,
-#else
 		.mode		= 0200,
 
-#endif /*OPLUS_FEATURE_PERFORMANCE*/
 		.proc_handler	= sysctl_compaction_handler,
 	},
 	{

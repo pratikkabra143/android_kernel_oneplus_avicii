@@ -70,10 +70,6 @@
 #include <linux/pgtable.h>
 #include <asm/mmu_context.h>
 
-#ifdef OPLUS_BUG_STABILITY
-#include <soc/oplus/system/oplus_process.h>
-#endif
-
 /*
  * The default value should be high enough to not crash a system that randomly
  * crashes its kernel from time to time, but low enough to at least not permit
@@ -118,10 +114,6 @@ static __init int kernel_exit_sysfs_init(void)
 	return 0;
 }
 late_initcall(kernel_exit_sysfs_init);
-#endif
-
-#ifdef CONFIG_OPLUS_FEATURE_UID_PERF
-extern void uid_check_out_pevent(struct task_struct *task);
 #endif
 
 static void __unhash_process(struct task_struct *p, bool group_dead)
@@ -457,12 +449,6 @@ kill_orphaned_pgrp(struct task_struct *tsk, struct task_struct *parent)
 	    task_session(parent) == task_session(tsk) &&
 	    will_become_orphaned_pgrp(pgrp, ignored_task) &&
 	    has_stopped_jobs(pgrp)) {
-#ifdef OPLUS_BUG_STABILITY
-            if (oplus_is_android_core_group(pgrp)) {
-                printk("kill_orphaned_pgrp: find android core process will be hungup, ignored it, only hungup itself:%s:%d , current=%d \n",tsk->comm,tsk->pid,current->pid);
-                return;
-            }
-#endif /*OPLUS_BUG_STABILITY*/
 		__kill_pgrp_info(SIGHUP, SEND_SIG_PRIV, pgrp);
 		__kill_pgrp_info(SIGCONT, SEND_SIG_PRIV, pgrp);
 	}
@@ -846,14 +832,6 @@ void __noreturn do_exit(long code)
 	struct task_struct *tsk = current;
 	int group_dead;
 
-//#ifdef OPLUS_BUG_STABILITY
-    if (is_critial_process(tsk)) {
-        printk("critical svc %d:%s exit with %ld !\n", tsk->pid, tsk->comm,code);
-    }
-//#endif /*OPLUS_BUG_STABILITY*/
-
-	profile_task_exit(tsk);
-	kcov_task_exit(tsk);
 	/*
 	 * We can get here from a kernel oops, sometimes with preemption off.
 	 * Start by checking for critical errors.

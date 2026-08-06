@@ -26,18 +26,6 @@
 #include <linux/regulator/machine.h>
 #include <linux/regulator/of_regulator.h>
 
-#ifdef OPLUS_FEATURE_THEIA
-#include <soc/oplus/system/oplus_bscheck.h>
-#include <soc/oplus/system/oplus_brightscreen_check.h>
-#endif
-
-#ifdef CONFIG_OPLUS_FEATURE_MISC
-#include <linux/syscalls.h>
-#include <linux/sched/debug.h>
-#include <soc/oplus/system/boot_mode.h>
-#include <soc/oplus/system/oplus_misc.h>
-#endif
-
 #define PMIC_VER_8941				0x01
 #define PMIC_VERSION_REG			0x0105
 #define PMIC_VERSION_REV4_REG			0x0103
@@ -956,16 +944,6 @@ static int qpnp_pon_input_dispatch(struct qpnp_pon *pon, u32 pon_type)
 	switch (cfg->pon_type) {
 	case PON_KPDPWR:
 		pon_rt_bit = QPNP_PON_KPDPWR_N_SET;
-#ifdef CONFIG_OPLUS_FEATURE_MISC
-		if ((pon_rt_sts & pon_rt_bit) == 0) {
-			pr_debug("Power-Key UP\n");
-			cancel_delayed_work(&pon->press_work);
-		} else {
-			pr_debug("Power-Key DOWN\n");
-			schedule_delayed_work(&pon->press_work,
-				msecs_to_jiffies(4000));
-		}
-#endif
 		break;
 	case PON_RESIN:
 		pon_rt_bit = QPNP_PON_RESIN_N_SET;
@@ -1001,15 +979,6 @@ static int qpnp_pon_input_dispatch(struct qpnp_pon *pon, u32 pon_type)
 		input_report_key(pon->pon_input, cfg->key_code, 1);
 		input_sync(pon->pon_input);
 	}
-
-	#ifdef OPLUS_FEATURE_THEIA
-	pr_err("keycode = %d,key_st = %d  old_state= %d   %d \n",cfg->key_code, key_status,cfg->old_state ,KEY_POWER);
-	if(cfg->key_code == KEY_POWER && key_status == 1 && cfg->old_state == 0){
-		//we should canel per work
-		black_screen_timer_restart();
-		bright_screen_timer_restart();
-	}
-	#endif
 
 	input_report_key(pon->pon_input, cfg->key_code, key_status);
 	input_sync(pon->pon_input);
@@ -1163,44 +1132,6 @@ static void bark_work_func(struct work_struct *work)
 		schedule_delayed_work(&pon->bark_work, QPNP_KEY_STATUS_DELAY);
 	}
 }
-
-#ifdef CONFIG_OPLUS_FEATURE_MISC
-static void press_work_func(struct work_struct *work)
-{
-	int display_bl, boot_mode;
-	int rc;
-	uint pon_rt_sts = 0;
-	struct qpnp_pon_config *cfg;
-	struct qpnp_pon *pon =
-	container_of(work, struct qpnp_pon, press_work.work);
-
-	cfg = qpnp_get_cfg(pon, PON_KPDPWR);
-	if (!cfg) {
-		dev_err(pon->dev, "Invalid config pointer\n");
-		goto err_return;
-	}
-	/* check the RT status to get the current status of the line */
-	rc = regmap_read(pon->regmap, QPNP_PON_RT_STS(pon), &pon_rt_sts);
-	if (rc) {
-		dev_err(pon->dev, "Unable to read PON RT status\n");
-		goto err_return;
-	}
-	if ((pon_rt_sts & QPNP_PON_KPDPWR_N_SET) == 1) {
-		dev_err(pon->dev, "after 4s Power-Key is still DOWN\n");
-		display_bl = dsi_panel_backlight_get();
-		boot_mode = get_boot_mode();
-		if (display_bl == 0 && boot_mode == MSM_BOOT_MODE__NORMAL) {
-			oplus_switch_fulldump(0);
-			show_state_filter(TASK_UNINTERRUPTIBLE);
-			panic("power key still pressed\n");
-		}
-	}
-	msleep(20);
-	ksys_sync();
-err_return:
-	return;
-}
-#endif
 
 static irqreturn_t qpnp_resin_bark_irq(int irq, void *_pon)
 {
@@ -2452,9 +2383,6 @@ static int qpnp_pon_probe(struct platform_device *pdev)
 	dev_set_drvdata(dev, pon);
 
 	INIT_DELAYED_WORK(&pon->bark_work, bark_work_func);
-#ifdef CONFIG_OPLUS_FEATURE_MISC
-	INIT_DELAYED_WORK(&pon->press_work, press_work_func);
-#endif
 	rc = qpnp_pon_parse_dt_power_off_config(pon);
 	if (rc)
 		return rc;
